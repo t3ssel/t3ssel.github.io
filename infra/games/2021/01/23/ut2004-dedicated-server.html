@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>t3ssel - blog</title>
+  <link rel="stylesheet" type="text/css" href="/assets/css/default.css">
+  <link rel="stylesheet" type="text/css" href="/assets/css/vs.css">
+  <link rel="shortcut icon" type="image/x-icon" href="/assets/img/favicon.ico">
+</head>
+
+
+  <body>
+    <header id="header-page">
+  <div id="header-name"><a href="/">t3ssel</a></div>
+  <div id="header-menu"><a href="/about.html">who am i</a></div>
+</header>
+
+    <main>
+      <article>
+  <header class="article-header">
+    <h1 class="article-title">UT2004 Dedicated server notes</h1>
+  </header>
+  <time datetime="2021-01-23T17:44:00+01:00">Posted on
+    
+    Jan 23, 2021</time> - <span class="article-categories">infra, games</span>
+  <div>
+    <p> The Unreal series have always been very important to me. I literally have them all, including the old solo games and the console ones. Unreal Tournament 2004, however, was a very interesting one. A full working editor (UnrealEd) was included out of the box, aside of the game, expanding the game lifetime by a lot. The main trend was to create maps, which were often “signed” by their author, like <a href="https://unrealarchive.org/maps/unreal-tournament-2004/deathmatch/U/dm-under_le_a12b017d.html" target="_blank" rel="noopener noreferrer">Under_LE</a>, but executing code was also possible using the UnrealScript language. In the end, the game was so editable you could create a new game out of it.</p>
+
+<p>After almost 20 years, I finally decided to launch my own public server game, or at least to try, and it was a real hassle. Almost all the official ressources are offline or not working (watching you the serial key generator). In the end, I have finally a running dedicated server, here are my notes.</p>
+
+<h1 id="prerequisites">Prerequisites</h1>
+
+<p>Assuming you have a fresh Debian installation, you’ll also need:</p>
+<ul>
+  <li>the <a href="https://www.ausgamers.com/files/download/20778/unreal-tournament-2004-dedicated-server-v3339" target="_blank" rel="noopener noreferrer">Unreal Tournament 2004 Dedicated Server v3339</a>;</li>
+  <li>the <a href="https://www.ausgamers.com/files/download/20096/unreal-tournament-2004-patch-v33692-for-linux" target="_blank" rel="noopener noreferrer">Unreal Tournament 2004 Patch v3369.2 for Linux</a>;</li>
+  <li>a <a href="https://www.epicgames.com/unrealtournament/forums/cdkey.php?2004" target="_blank" rel="noopener noreferrer">game server serial key</a>.</li>
+</ul>
+
+<h1 id="installation">Installation</h1>
+
+<p>Please create a dedicated user (you’ll be running a 20 years old binary after all)</p>
+
+<figure class="highlight"><pre><code class="language-bash" data-lang="bash">adduser unreal</code></pre></figure>
+
+<p>Game server is 32bits</p>
+
+<figure class="highlight"><pre><code class="language-bash" data-lang="bash">dpkg <span class="nt">--add-architecture</span> i386
+apt-get update
+apt-get <span class="nb">install </span>libstdc++5 libstdc++5:i386</code></pre></figure>
+
+<p>On dedicated user, unzip files and patch game server</p>
+
+<figure class="highlight"><pre><code class="language-bash" data-lang="bash">unzip DedicatedServer3339-BonusPack.zip <span class="nt">-d</span> ut2004
+<span class="nb">tar </span>jxvf ut2004-lnxpatch3369-2.tar.bz2
+<span class="nb">cp</span> <span class="nt">-r</span> <span class="nt">-u</span> <span class="nt">-v</span> ut2004-lnxpatch3369-2/<span class="k">*</span> ut2004/</code></pre></figure>
+
+<p>Install serial key</p>
+
+<figure class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="nb">echo</span> <span class="s2">"[serial key]"</span> <span class="o">&gt;</span> ut2004/System/cdkey</code></pre></figure>
+
+<h1 id="configuration">Configuration</h1>
+
+<p>Setting up your server can be a long and painful task. Here are the main settings you’ll need to edit, for more read the <a href="https://unrealadmin.org/server_ini_reference/ut2004" target="_blank" rel="noopener noreferrer">ini reference guide</a>.</p>
+
+<h2 id="url">[URL]</h2>
+
+<p>Listening port:</p>
+
+<figure class="highlight"><pre><code class="language-ini" data-lang="ini"><span class="py">Port</span><span class="p">=</span><span class="s">7777</span></code></pre></figure>
+
+<h2 id="engineengine">[Engine.Engine]</h2>
+
+<p>Select a gamemode from the <a href="https://wiki.unrealadmin.org/Gametype_List_%28UT2004%29" target="_blank" rel="noopener noreferrer">gamemode list</a>:</p>
+
+<figure class="highlight"><pre><code class="language-ini" data-lang="ini"><span class="py">DefaultGame</span><span class="p">=</span><span class="s">XGame.XDeathmatch 	</span>
+<span class="py">DefaultServerGame</span><span class="p">=</span><span class="s">XGame.XDeathmatch</span></code></pre></figure>
+
+<p>Note: overwritten from the command line options.</p>
+
+<h2 id="enginegameengine">[Engine.GameEngine]</h2>
+
+<p>Please disable the VoIP subsystem (could lead to security issues):</p>
+
+<figure class="highlight"><pre><code class="language-ini" data-lang="ini"><span class="py">VoIPAllowVAD</span><span class="p">=</span><span class="s">False</span></code></pre></figure>
+
+<p>Package list, force players to download them if missing locally:</p>
+
+<figure class="highlight"><pre><code class="language-ini" data-lang="ini"><span class="py">ServerPackages</span><span class="p">=</span><span class="s">satoreMonsterPackv120</span></code></pre></figure>
+
+<h2 id="enginegameinfo">[Engine.GameInfo]</h2>
+
+<p>If you enable the voting system, you need to link it:</p>
+
+<figure class="highlight"><pre><code class="language-ini" data-lang="ini"><span class="py">VotingHandlerType</span><span class="p">=</span><span class="s">xVoting.xVotingHandler</span></code></pre></figure>
+
+<h2 id="xvotingxvotinghandler">[xVoting.xVotingHandler]</h2>
+
+<p>Map voting system configuration:</p>
+
+<figure class="highlight"><pre><code class="language-ini" data-lang="ini"><span class="nn">[xVoting.xVotingHandler]</span>
+<span class="py">VoteTimeLimit</span><span class="p">=</span><span class="s">70</span>
+<span class="py">ScoreBoardDelay</span><span class="p">=</span><span class="s">5</span>
+<span class="py">bAutoOpen</span><span class="p">=</span><span class="s">True</span>
+<span class="py">MidGameVotePercent</span><span class="p">=</span><span class="s">50</span>
+<span class="py">bScoreMode</span><span class="p">=</span><span class="s">False</span>
+<span class="py">bAccumulationMode</span><span class="p">=</span><span class="s">False</span>
+<span class="py">bEliminationMode</span><span class="p">=</span><span class="s">False</span>
+<span class="py">MinMapCount</span><span class="p">=</span><span class="s">2</span>
+<span class="py">MapVoteHistoryType</span><span class="p">=</span><span class="s">xVoting.MapVoteHistory_INI</span>
+<span class="py">RepeatLimit</span><span class="p">=</span><span class="s">4</span>
+<span class="py">DefaultGameConfig</span><span class="p">=</span><span class="s">0</span>
+<span class="py">bDefaultToCurrentGameType</span><span class="p">=</span><span class="s">True</span>
+<span class="py">bMapVote</span><span class="p">=</span><span class="s">False</span>
+<span class="py">bKickVote</span><span class="p">=</span><span class="s">False</span>
+<span class="py">bMatchSetup</span><span class="p">=</span><span class="s">False</span>
+<span class="py">KickPercent</span><span class="p">=</span><span class="s">51</span>
+<span class="py">bAnonymousKicking</span><span class="p">=</span><span class="s">True</span>
+<span class="py">MapListLoaderType</span><span class="p">=</span><span class="s">xVoting.DefaultMapListLoader</span>
+<span class="py">ServerNumber</span><span class="p">=</span><span class="s">1</span>
+<span class="py">CurrentGameConfig</span><span class="p">=</span><span class="s">0</span>
+<span class="py">GameConfig</span><span class="p">=</span><span class="s">(GameClass="XGame.xDeathMatch",Prefix=,Acronym=,GameName="new",Mutators=,Options=) </span></code></pre></figure>
+
+<p>Note: don’t forget to edit your GameClass according to your gamemode, your Mutators list and your prefix/acronym values to the maps you want to play on (example: <code class="highlighter-rouge">Prefix="DM",Acronym="DM"</code> for DM* maps).</p>
+
+<h2 id="ipdrvtcpnetdriver">[IpDrv.TcpNetDriver]</h2>
+
+<p>Allow players to download files directly from your game server:</p>
+
+<figure class="highlight"><pre><code class="language-ini" data-lang="ini"><span class="py">AllowDownloads</span><span class="p">=</span><span class="s">True</span></code></pre></figure>
+
+<p>Maximum bit rate given to each player:</p>
+
+<figure class="highlight"><pre><code class="language-ini" data-lang="ini"><span class="py">MaxInternetClientRate</span><span class="p">=</span><span class="s">20000</span></code></pre></figure>
+
+<h2 id="ipdrvmasterserveruplink">[IpDrv.MasterServerUplink]</h2>
+
+<p>Make you server publicly visible:</p>
+
+<figure class="highlight"><pre><code class="language-ini" data-lang="ini"><span class="py">DoUplink</span><span class="p">=</span><span class="s">True</span></code></pre></figure>
+
+<p>Disable Gamespy (this service is now offline):</p>
+
+<figure class="highlight"><pre><code class="language-ini" data-lang="ini"><span class="py">UplinkToGamespy</span><span class="p">=</span><span class="s">False</span></code></pre></figure>
+
+<p>Disable statistics sent to master server:</p>
+
+<figure class="highlight"><pre><code class="language-ini" data-lang="ini"><span class="py">SendStats</span><span class="p">=</span><span class="s">False</span></code></pre></figure>
+
+<p>If behind a NAT firewall, prevents ping to be shown as <code class="highlighter-rouge">N/A</code>:</p>
+
+<figure class="highlight"><pre><code class="language-ini" data-lang="ini"><span class="py">ServerBehindNAT</span><span class="p">=</span><span class="s">False</span></code></pre></figure>
+
+<h2 id="enginegameinfo-1">[Engine.GameInfo]</h2>
+
+<p>Disable statistic generator:</p>
+
+<figure class="highlight"><pre><code class="language-ini" data-lang="ini"><span class="py">bEnableStatLogging</span><span class="p">=</span><span class="s">false</span></code></pre></figure>
+
+<p>Max number of spectators:</p>
+
+<figure class="highlight"><pre><code class="language-ini" data-lang="ini"><span class="py">MaxSpectators</span><span class="p">=</span><span class="s">2</span></code></pre></figure>
+
+<p>Max number of players:</p>
+
+<figure class="highlight"><pre><code class="language-ini" data-lang="ini"><span class="py">MaxPlayers</span><span class="p">=</span><span class="s">16</span></code></pre></figure>
+
+<p>Will weapon stay after being picked up:</p>
+
+<figure class="highlight"><pre><code class="language-ini" data-lang="ini"><span class="py">bWeaponStay</span><span class="p">=</span><span class="s">True</span></code></pre></figure>
+
+<p>Allow players to drop weapons:</p>
+
+<figure class="highlight"><pre><code class="language-ini" data-lang="ini"><span class="py">bAllowWeaponThrowing</span><span class="p">=</span><span class="s">True</span></code></pre></figure>
+
+<p>Can admin players pause the game:</p>
+
+<figure class="highlight"><pre><code class="language-ini" data-lang="ini"><span class="py">bAdminCanPause</span><span class="p">=</span><span class="s">True</span></code></pre></figure>
+
+<h2 id="enginegamereplicationinfo">[Engine.GameReplicationInfo]</h2>
+
+<p>Server name show in server list:</p>
+
+<figure class="highlight"><pre><code class="language-ini" data-lang="ini"><span class="py">ServerName</span><span class="p">=</span><span class="s">"Amazing and crazy server"</span></code></pre></figure>
+
+<p>Admin name shown in server info:</p>
+
+<figure class="highlight"><pre><code class="language-ini" data-lang="ini"><span class="py">AdminName</span><span class="p">=</span><span class="s">SuperAmazingAdmin</span></code></pre></figure>
+
+<p>Admin email address shown in server info:</p>
+
+<figure class="highlight"><pre><code class="language-ini" data-lang="ini"><span class="py">AdminEmail</span><span class="p">=</span><span class="s">admin@superserver.com</span></code></pre></figure>
+
+<p>A message of the day shown on player screen:</p>
+
+<figure class="highlight"><pre><code class="language-ini" data-lang="ini"><span class="py">MessageOfTheDay</span><span class="p">=</span><span class="s">"Welcome!|This is a new line"</span></code></pre></figure>
+
+<h2 id="uwebwebserver">[UWeb.WebServer]</h2>
+
+<p>Enable/disable admin web console:</p>
+
+<figure class="highlight"><pre><code class="language-ini" data-lang="ini"><span class="py">bEnabled</span><span class="p">=</span><span class="s">True</span>
+<span class="py">ListenPort</span><span class="p">=</span><span class="s">80</span></code></pre></figure>
+
+<p>Note: crashes when moving pages around too quickly (<code class="highlighter-rouge">Close: Error while attempting to close socket.</code>).</p>
+
+<h1 id="mutator-installation">Mutator installation</h1>
+
+<p>To install a mutator, copy the <code class="highlighter-rouge">System/*</code> files to your <code class="highlighter-rouge">System/</code> folder, the <code class="highlighter-rouge">StaticMeshes/*</code> files to your <code class="highlighter-rouge">StaticMeshes/</code> folder and so on.
+Each mutator has a unique package name located in its <code class="highlighter-rouge">.ucl</code> file:</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Mutator=(ClassName=MyMutatorName.SubClassName)
+</code></pre></div></div>
+
+<p>Then add its package name (here <code class="highlighter-rouge">MyMutatorName</code>) to your <code class="highlighter-rouge">ServerPackages</code> list and its full class name to your <code class="highlighter-rouge">Mutators</code> list (both in your voting subsystem and command line options).</p>
+
+<p>Their configuration usually comes from a <code class="highlighter-rouge">PackageName.ini</code> file in your <code class="highlighter-rouge">System</code> folder (here <code class="highlighter-rouge">System/MyMutatorName.ini</code>) that you can force the generation of by starting a game locally with the mutator enabled.</p>
+
+<h1 id="systemd-service">Systemd service</h1>
+
+<p>An example of a systemd service, can be written in <code class="highlighter-rouge">/lib/systemd/system/ut2004.service</code>:</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>[Unit]
+Description=Unreal 2004 Dedicated game server
+After=network.target
+
+[Service]
+Type=simple
+User=unreal
+WorkingDirectory=/home/unreal/ut2004/System
+ExecStart=/home/unreal/ut2004/System/ucc-bin-linux-amd64 server CTF-BridgeOfFate?game=XGame.xCTFGame?AdminName=admin?AdminPassword=XXXXXXXX ini=UT2004.ini log=server.log -nohomedir
+Restart=always
+</code></pre></div></div>
+<p>Note: edit your gamemode, admin credentials and mutator list if needed.</p>
+
+<h1 id="summary">Summary</h1>
+
+<p> Most of the time everything works pretty well. You can also completely remove everything related to graphical settings in your ini file in you want to. I also had issues with the admin web console (crashing non stop) and the <a href="https://wiki.unrealadmin.org/Ports_%28UT%29" target="_blank" rel="noopener noreferrer">ports list</a> which seems to be outdated. I ended up opening them all which I discourage to do. Can’t wait for Fornite to die so we can finally have a new finished and polished Unreal game.</p>
+
+<h1 id="links">Links</h1>
+
+<ul>
+  <li>Unreal Admin setup guide: <a href="https://wiki.unrealadmin.org/Server_Setup_%28UT2004%29" target="_blank" rel="noopener noreferrer">https://wiki.unrealadmin.org/Server_Setup_%28UT2004%29</a>;</li>
+  <li>Default gamemode list: <a href="https://wiki.unrealadmin.org/Gametype_List_%28UT2004%29" target="_blank" rel="noopener noreferrer">https://wiki.unrealadmin.org/Gametype_List_%28UT2004%29</a>;</li>
+  <li>Default mutator list: <a href="https://wiki.unrealadmin.org/Mutator_List_%28UT2004%29" target="_blank" rel="noopener noreferrer">https://wiki.unrealadmin.org/Mutator_List_%28UT2004%29</a>;</li>
+  <li>Command line parameters: <a href="https://wiki.unrealadmin.org/Commandline_Parameters_%28UT2004%29" target="_blank" rel="noopener noreferrer">https://wiki.unrealadmin.org/Commandline_Parameters_%28UT2004%29</a>;</li>
+  <li>Another useful guide: <a href="https://www.lucaswilliams.net/index.php/2017/12/04/setting-up-unreal-tournament-2004-game-server-on-ubuntu-16-04/" target="_blank" rel="noopener noreferrer">https://www.lucaswilliams.net/index.php/2017/12/04/setting-up-unreal-tournament-2004-game-server-on-ubuntu-16-04/</a>;</li>
+  <li>Unreal archive: <a href="https://unrealarchive.org/index.html" target="_blank" rel="noopener noreferrer">https://unrealarchive.org/index.html</a>.</li>
+</ul>
+
+  </div>
+</article>
+
+    </main>
+    <footer id="footer-page">
+      <p>All work and opinions are solely my own and do not express the views or opinions of my employer.</p>
+    </footer>
+  </body>
+</html> 

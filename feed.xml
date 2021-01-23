@@ -1,0 +1,221 @@
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.0.0">Jekyll</generator><link href="/feed.xml" rel="self" type="application/atom+xml" /><link href="/" rel="alternate" type="text/html" /><updated>2021-01-23T19:21:26+01:00</updated><id>/feed.xml</id><title type="html">Your awesome title</title><subtitle>Write an awesome description for your new site here. You can edit this line in _config.yml. It will appear in your document head meta (for Google search results) and in your feed.xml site description.</subtitle><entry><title type="html">UT2004 Dedicated server notes</title><link href="/infra/games/2021/01/23/ut2004-dedicated-server.html" rel="alternate" type="text/html" title="UT2004 Dedicated server notes" /><published>2021-01-23T17:44:00+01:00</published><updated>2021-01-23T17:44:00+01:00</updated><id>/infra/games/2021/01/23/ut2004-dedicated-server</id><content type="html" xml:base="/infra/games/2021/01/23/ut2004-dedicated-server.html">&lt;p&gt; The Unreal series have always been very important to me. I literally have them all, including the old solo games and the console ones. Unreal Tournament 2004, however, was a very interesting one. A full working editor (UnrealEd) was included out of the box, aside of the game, expanding the game lifetime by a lot. The main trend was to create maps, which were often “signed” by their author, like &lt;a href=&quot;https://unrealarchive.org/maps/unreal-tournament-2004/deathmatch/U/dm-under_le_a12b017d.html&quot;&gt;Under_LE&lt;/a&gt;, but executing code was also possible using the UnrealScript language. In the end, the game was so editable you could create a new game out of it.&lt;/p&gt;
+
+&lt;p&gt;After almost 20 years, I finally decided to launch my own public server game, or at least to try, and it was a real hassle. Almost all the official ressources are offline or not working (watching you the serial key generator). In the end, I have finally a running dedicated server, here are my notes.&lt;/p&gt;
+
+&lt;h1 id=&quot;prerequisites&quot;&gt;Prerequisites&lt;/h1&gt;
+
+&lt;p&gt;Assuming you have a fresh Debian installation, you’ll also need:&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;the &lt;a href=&quot;https://www.ausgamers.com/files/download/20778/unreal-tournament-2004-dedicated-server-v3339&quot;&gt;Unreal Tournament 2004 Dedicated Server v3339&lt;/a&gt;;&lt;/li&gt;
+  &lt;li&gt;the &lt;a href=&quot;https://www.ausgamers.com/files/download/20096/unreal-tournament-2004-patch-v33692-for-linux&quot;&gt;Unreal Tournament 2004 Patch v3369.2 for Linux&lt;/a&gt;;&lt;/li&gt;
+  &lt;li&gt;a &lt;a href=&quot;https://www.epicgames.com/unrealtournament/forums/cdkey.php?2004&quot;&gt;game server serial key&lt;/a&gt;.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h1 id=&quot;installation&quot;&gt;Installation&lt;/h1&gt;
+
+&lt;p&gt;Please create a dedicated user (you’ll be running a 20 years old binary after all)&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-bash&quot; data-lang=&quot;bash&quot;&gt;adduser unreal&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Game server is 32bits&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-bash&quot; data-lang=&quot;bash&quot;&gt;dpkg &lt;span class=&quot;nt&quot;&gt;--add-architecture&lt;/span&gt; i386
+apt-get update
+apt-get &lt;span class=&quot;nb&quot;&gt;install &lt;/span&gt;libstdc++5 libstdc++5:i386&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;On dedicated user, unzip files and patch game server&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-bash&quot; data-lang=&quot;bash&quot;&gt;unzip DedicatedServer3339-BonusPack.zip &lt;span class=&quot;nt&quot;&gt;-d&lt;/span&gt; ut2004
+&lt;span class=&quot;nb&quot;&gt;tar &lt;/span&gt;jxvf ut2004-lnxpatch3369-2.tar.bz2
+&lt;span class=&quot;nb&quot;&gt;cp&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-r&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-u&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-v&lt;/span&gt; ut2004-lnxpatch3369-2/&lt;span class=&quot;k&quot;&gt;*&lt;/span&gt; ut2004/&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Install serial key&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-bash&quot; data-lang=&quot;bash&quot;&gt;&lt;span class=&quot;nb&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;[serial key]&quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; ut2004/System/cdkey&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;h1 id=&quot;configuration&quot;&gt;Configuration&lt;/h1&gt;
+
+&lt;p&gt;Setting up your server can be a long and painful task. Here are the main settings you’ll need to edit, for more read the &lt;a href=&quot;https://unrealadmin.org/server_ini_reference/ut2004&quot;&gt;ini reference guide&lt;/a&gt;.&lt;/p&gt;
+
+&lt;h2 id=&quot;url&quot;&gt;[URL]&lt;/h2&gt;
+
+&lt;p&gt;Listening port:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-ini&quot; data-lang=&quot;ini&quot;&gt;&lt;span class=&quot;py&quot;&gt;Port&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;7777&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;h2 id=&quot;engineengine&quot;&gt;[Engine.Engine]&lt;/h2&gt;
+
+&lt;p&gt;Select a gamemode from the &lt;a href=&quot;https://wiki.unrealadmin.org/Gametype_List_%28UT2004%29&quot;&gt;gamemode list&lt;/a&gt;:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-ini&quot; data-lang=&quot;ini&quot;&gt;&lt;span class=&quot;py&quot;&gt;DefaultGame&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;XGame.XDeathmatch 	&lt;/span&gt;
+&lt;span class=&quot;py&quot;&gt;DefaultServerGame&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;XGame.XDeathmatch&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Note: overwritten from the command line options.&lt;/p&gt;
+
+&lt;h2 id=&quot;enginegameengine&quot;&gt;[Engine.GameEngine]&lt;/h2&gt;
+
+&lt;p&gt;Please disable the VoIP subsystem (could lead to security issues):&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-ini&quot; data-lang=&quot;ini&quot;&gt;&lt;span class=&quot;py&quot;&gt;VoIPAllowVAD&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;False&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Package list, force players to download them if missing locally:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-ini&quot; data-lang=&quot;ini&quot;&gt;&lt;span class=&quot;py&quot;&gt;ServerPackages&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;satoreMonsterPackv120&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;h2 id=&quot;enginegameinfo&quot;&gt;[Engine.GameInfo]&lt;/h2&gt;
+
+&lt;p&gt;If you enable the voting system, you need to link it:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-ini&quot; data-lang=&quot;ini&quot;&gt;&lt;span class=&quot;py&quot;&gt;VotingHandlerType&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;xVoting.xVotingHandler&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;h2 id=&quot;xvotingxvotinghandler&quot;&gt;[xVoting.xVotingHandler]&lt;/h2&gt;
+
+&lt;p&gt;Map voting system configuration:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-ini&quot; data-lang=&quot;ini&quot;&gt;&lt;span class=&quot;nn&quot;&gt;[xVoting.xVotingHandler]&lt;/span&gt;
+&lt;span class=&quot;py&quot;&gt;VoteTimeLimit&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;70&lt;/span&gt;
+&lt;span class=&quot;py&quot;&gt;ScoreBoardDelay&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;5&lt;/span&gt;
+&lt;span class=&quot;py&quot;&gt;bAutoOpen&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;True&lt;/span&gt;
+&lt;span class=&quot;py&quot;&gt;MidGameVotePercent&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;50&lt;/span&gt;
+&lt;span class=&quot;py&quot;&gt;bScoreMode&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;False&lt;/span&gt;
+&lt;span class=&quot;py&quot;&gt;bAccumulationMode&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;False&lt;/span&gt;
+&lt;span class=&quot;py&quot;&gt;bEliminationMode&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;False&lt;/span&gt;
+&lt;span class=&quot;py&quot;&gt;MinMapCount&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;2&lt;/span&gt;
+&lt;span class=&quot;py&quot;&gt;MapVoteHistoryType&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;xVoting.MapVoteHistory_INI&lt;/span&gt;
+&lt;span class=&quot;py&quot;&gt;RepeatLimit&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;4&lt;/span&gt;
+&lt;span class=&quot;py&quot;&gt;DefaultGameConfig&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;0&lt;/span&gt;
+&lt;span class=&quot;py&quot;&gt;bDefaultToCurrentGameType&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;True&lt;/span&gt;
+&lt;span class=&quot;py&quot;&gt;bMapVote&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;False&lt;/span&gt;
+&lt;span class=&quot;py&quot;&gt;bKickVote&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;False&lt;/span&gt;
+&lt;span class=&quot;py&quot;&gt;bMatchSetup&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;False&lt;/span&gt;
+&lt;span class=&quot;py&quot;&gt;KickPercent&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;51&lt;/span&gt;
+&lt;span class=&quot;py&quot;&gt;bAnonymousKicking&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;True&lt;/span&gt;
+&lt;span class=&quot;py&quot;&gt;MapListLoaderType&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;xVoting.DefaultMapListLoader&lt;/span&gt;
+&lt;span class=&quot;py&quot;&gt;ServerNumber&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;1&lt;/span&gt;
+&lt;span class=&quot;py&quot;&gt;CurrentGameConfig&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;0&lt;/span&gt;
+&lt;span class=&quot;py&quot;&gt;GameConfig&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;(GameClass=&quot;XGame.xDeathMatch&quot;,Prefix=,Acronym=,GameName=&quot;new&quot;,Mutators=,Options=) &lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Note: don’t forget to edit your GameClass according to your gamemode, your Mutators list and your prefix/acronym values to the maps you want to play on (example: &lt;code class=&quot;highlighter-rouge&quot;&gt;Prefix=&quot;DM&quot;,Acronym=&quot;DM&quot;&lt;/code&gt; for DM* maps).&lt;/p&gt;
+
+&lt;h2 id=&quot;ipdrvtcpnetdriver&quot;&gt;[IpDrv.TcpNetDriver]&lt;/h2&gt;
+
+&lt;p&gt;Allow players to download files directly from your game server:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-ini&quot; data-lang=&quot;ini&quot;&gt;&lt;span class=&quot;py&quot;&gt;AllowDownloads&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;True&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Maximum bit rate given to each player:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-ini&quot; data-lang=&quot;ini&quot;&gt;&lt;span class=&quot;py&quot;&gt;MaxInternetClientRate&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;20000&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;h2 id=&quot;ipdrvmasterserveruplink&quot;&gt;[IpDrv.MasterServerUplink]&lt;/h2&gt;
+
+&lt;p&gt;Make you server publicly visible:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-ini&quot; data-lang=&quot;ini&quot;&gt;&lt;span class=&quot;py&quot;&gt;DoUplink&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;True&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Disable Gamespy (this service is now offline):&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-ini&quot; data-lang=&quot;ini&quot;&gt;&lt;span class=&quot;py&quot;&gt;UplinkToGamespy&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;False&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Disable statistics sent to master server:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-ini&quot; data-lang=&quot;ini&quot;&gt;&lt;span class=&quot;py&quot;&gt;SendStats&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;False&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;If behind a NAT firewall, prevents ping to be shown as &lt;code class=&quot;highlighter-rouge&quot;&gt;N/A&lt;/code&gt;:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-ini&quot; data-lang=&quot;ini&quot;&gt;&lt;span class=&quot;py&quot;&gt;ServerBehindNAT&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;False&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;h2 id=&quot;enginegameinfo-1&quot;&gt;[Engine.GameInfo]&lt;/h2&gt;
+
+&lt;p&gt;Disable statistic generator:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-ini&quot; data-lang=&quot;ini&quot;&gt;&lt;span class=&quot;py&quot;&gt;bEnableStatLogging&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;false&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Max number of spectators:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-ini&quot; data-lang=&quot;ini&quot;&gt;&lt;span class=&quot;py&quot;&gt;MaxSpectators&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;2&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Max number of players:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-ini&quot; data-lang=&quot;ini&quot;&gt;&lt;span class=&quot;py&quot;&gt;MaxPlayers&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;16&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Will weapon stay after being picked up:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-ini&quot; data-lang=&quot;ini&quot;&gt;&lt;span class=&quot;py&quot;&gt;bWeaponStay&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;True&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Allow players to drop weapons:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-ini&quot; data-lang=&quot;ini&quot;&gt;&lt;span class=&quot;py&quot;&gt;bAllowWeaponThrowing&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;True&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Can admin players pause the game:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-ini&quot; data-lang=&quot;ini&quot;&gt;&lt;span class=&quot;py&quot;&gt;bAdminCanPause&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;True&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;h2 id=&quot;enginegamereplicationinfo&quot;&gt;[Engine.GameReplicationInfo]&lt;/h2&gt;
+
+&lt;p&gt;Server name show in server list:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-ini&quot; data-lang=&quot;ini&quot;&gt;&lt;span class=&quot;py&quot;&gt;ServerName&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;Amazing and crazy server&quot;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Admin name shown in server info:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-ini&quot; data-lang=&quot;ini&quot;&gt;&lt;span class=&quot;py&quot;&gt;AdminName&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;SuperAmazingAdmin&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Admin email address shown in server info:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-ini&quot; data-lang=&quot;ini&quot;&gt;&lt;span class=&quot;py&quot;&gt;AdminEmail&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;admin@superserver.com&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;A message of the day shown on player screen:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-ini&quot; data-lang=&quot;ini&quot;&gt;&lt;span class=&quot;py&quot;&gt;MessageOfTheDay&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;Welcome!|This is a new line&quot;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;h2 id=&quot;uwebwebserver&quot;&gt;[UWeb.WebServer]&lt;/h2&gt;
+
+&lt;p&gt;Enable/disable admin web console:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-ini&quot; data-lang=&quot;ini&quot;&gt;&lt;span class=&quot;py&quot;&gt;bEnabled&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;True&lt;/span&gt;
+&lt;span class=&quot;py&quot;&gt;ListenPort&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;80&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Note: crashes when moving pages around too quickly (&lt;code class=&quot;highlighter-rouge&quot;&gt;Close: Error while attempting to close socket.&lt;/code&gt;).&lt;/p&gt;
+
+&lt;h1 id=&quot;mutator-installation&quot;&gt;Mutator installation&lt;/h1&gt;
+
+&lt;p&gt;To install a mutator, copy the &lt;code class=&quot;highlighter-rouge&quot;&gt;System/*&lt;/code&gt; files to your &lt;code class=&quot;highlighter-rouge&quot;&gt;System/&lt;/code&gt; folder, the &lt;code class=&quot;highlighter-rouge&quot;&gt;StaticMeshes/*&lt;/code&gt; files to your &lt;code class=&quot;highlighter-rouge&quot;&gt;StaticMeshes/&lt;/code&gt; folder and so on.
+Each mutator has a unique package name located in its &lt;code class=&quot;highlighter-rouge&quot;&gt;.ucl&lt;/code&gt; file:&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;Mutator=(ClassName=MyMutatorName.SubClassName)
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Then add its package name (here &lt;code class=&quot;highlighter-rouge&quot;&gt;MyMutatorName&lt;/code&gt;) to your &lt;code class=&quot;highlighter-rouge&quot;&gt;ServerPackages&lt;/code&gt; list and its full class name to your &lt;code class=&quot;highlighter-rouge&quot;&gt;Mutators&lt;/code&gt; list (both in your voting subsystem and command line options).&lt;/p&gt;
+
+&lt;p&gt;Their configuration usually comes from a &lt;code class=&quot;highlighter-rouge&quot;&gt;PackageName.ini&lt;/code&gt; file in your &lt;code class=&quot;highlighter-rouge&quot;&gt;System&lt;/code&gt; folder (here &lt;code class=&quot;highlighter-rouge&quot;&gt;System/MyMutatorName.ini&lt;/code&gt;) that you can force the generation of by starting a game locally with the mutator enabled.&lt;/p&gt;
+
+&lt;h1 id=&quot;systemd-service&quot;&gt;Systemd service&lt;/h1&gt;
+
+&lt;p&gt;An example of a systemd service, can be written in &lt;code class=&quot;highlighter-rouge&quot;&gt;/lib/systemd/system/ut2004.service&lt;/code&gt;:&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;[Unit]
+Description=Unreal 2004 Dedicated game server
+After=network.target
+
+[Service]
+Type=simple
+User=unreal
+WorkingDirectory=/home/unreal/ut2004/System
+ExecStart=/home/unreal/ut2004/System/ucc-bin-linux-amd64 server CTF-BridgeOfFate?game=XGame.xCTFGame?AdminName=admin?AdminPassword=XXXXXXXX ini=UT2004.ini log=server.log -nohomedir
+Restart=always
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;Note: edit your gamemode, admin credentials and mutator list if needed.&lt;/p&gt;
+
+&lt;h1 id=&quot;summary&quot;&gt;Summary&lt;/h1&gt;
+
+&lt;p&gt; Most of the time everything works pretty well. You can also completely remove everything related to graphical settings in your ini file in you want to. I also had issues with the admin web console (crashing non stop) and the &lt;a href=&quot;https://wiki.unrealadmin.org/Ports_%28UT%29&quot;&gt;ports list&lt;/a&gt; which seems to be outdated. I ended up opening them all which I discourage to do. Can’t wait for Fornite to die so we can finally have a new finished and polished Unreal game.&lt;/p&gt;
+
+&lt;h1 id=&quot;links&quot;&gt;Links&lt;/h1&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Unreal Admin setup guide: &lt;a href=&quot;https://wiki.unrealadmin.org/Server_Setup_%28UT2004%29&quot;&gt;https://wiki.unrealadmin.org/Server_Setup_%28UT2004%29&lt;/a&gt;;&lt;/li&gt;
+  &lt;li&gt;Default gamemode list: &lt;a href=&quot;https://wiki.unrealadmin.org/Gametype_List_%28UT2004%29&quot;&gt;https://wiki.unrealadmin.org/Gametype_List_%28UT2004%29&lt;/a&gt;;&lt;/li&gt;
+  &lt;li&gt;Default mutator list: &lt;a href=&quot;https://wiki.unrealadmin.org/Mutator_List_%28UT2004%29&quot;&gt;https://wiki.unrealadmin.org/Mutator_List_%28UT2004%29&lt;/a&gt;;&lt;/li&gt;
+  &lt;li&gt;Command line parameters: &lt;a href=&quot;https://wiki.unrealadmin.org/Commandline_Parameters_%28UT2004%29&quot;&gt;https://wiki.unrealadmin.org/Commandline_Parameters_%28UT2004%29&lt;/a&gt;;&lt;/li&gt;
+  &lt;li&gt;Another useful guide: &lt;a href=&quot;https://www.lucaswilliams.net/index.php/2017/12/04/setting-up-unreal-tournament-2004-game-server-on-ubuntu-16-04/&quot;&gt;https://www.lucaswilliams.net/index.php/2017/12/04/setting-up-unreal-tournament-2004-game-server-on-ubuntu-16-04/&lt;/a&gt;;&lt;/li&gt;
+  &lt;li&gt;Unreal archive: &lt;a href=&quot;https://unrealarchive.org/index.html&quot;&gt;https://unrealarchive.org/index.html&lt;/a&gt;.&lt;/li&gt;
+&lt;/ul&gt;</content><author><name></name></author><summary type="html"> The Unreal series have always been very important to me. I literally have them all, including the old solo games and the console ones. Unreal Tournament 2004, however, was a very interesting one. A full working editor (UnrealEd) was included out of the box, aside of the game, expanding the game lifetime by a lot. The main trend was to create maps, which were often “signed” by their author, like Under_LE, but executing code was also possible using the UnrealScript language. In the end, the game was so editable you could create a new game out of it.</summary></entry></feed>

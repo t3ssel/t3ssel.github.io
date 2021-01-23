@@ -32,6 +32,21 @@ a {
   flex: 1;
 }
 
+#header-name a,
+#header-menu a {
+  color: #555;
+  -webkit-transition: color .1s linear;
+  -moz-transition: color .1s linear;
+  -o-transition: color .1s linear;
+  -ms-transition: color .1s linear;
+  transition: color .1s linear;
+}
+
+#header-name a:hover,
+#header-menu a:hover {
+  color: black;
+}
+
 main {
   max-width: 50em;
   margin: 0 auto;
@@ -50,8 +65,57 @@ article {
   font-size: 16px;
 }
 
-.article-header h2 {
+.article-title,
+h1 {
   font-size: 32px;
+  color: #555;
+}
+
+h1 {
+  font-size: 26px;
+  margin-top: 50px;
+}
+
+h2 {
+  font-size: 22px;
+  margin-top: 50px;
+}
+
+p {
+  margin-top: 20px;
+}
+
+time,
+.article-categories {
+  font-size: 14px;
+  font-style: italic;
+}
+
+a .article-title,
+a h1 {
+  color: #569cd6;
+  -webkit-transition: color .1s linear;
+  -moz-transition: color .1s linear;
+  -o-transition: color .1s linear;
+  -ms-transition: color .1s linear;
+  transition: color .1s linear;
+}
+
+a .article-title:hover,
+a h1:hover,
+p a:hover,
+li a:hover {
+  color: #4747ff;
+}
+
+p a,
+li a {
+  color: #569cd6;
+  -webkit-transition: color .1s linear;
+  -moz-transition: color .1s linear;
+  -o-transition: color .1s linear;
+  -ms-transition: color .1s linear;
+  transition: color .1s linear;
 }
 
 #footer-page {
@@ -75,6 +139,21 @@ article {
 
   #footer-page {
     border-top-color: white;
+  }
+
+  .article-title,
+  h1 {
+    color: white;
+  }
+
+  #header-name a,
+  #header-menu a {
+    color: white;
+  }
+
+  #header-name a:hover,
+  #header-menu a:hover {
+    color: #969696;
   }
 
 }
