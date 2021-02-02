@@ -1,7 +1,7 @@
 .highlight {
   background-color: #222;
   color: white;
-  overflow: scroll;
+  overflow: auto;
   margin: 10px;
   padding: 0px 10px;
 }
