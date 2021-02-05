@@ -3,11 +3,16 @@
   src: url('../font/OpenSans-Regular.ttf');
 }
 
+@font-face {
+  font-family: "SourceSansPro";
+  src: url('../font/SourceSansPro-Regular.ttf');
+}
+
 body {
   margin: 0;
   padding: 0;
   box-sizing: inherit;
-  font-family: 'OpenSans';
+  font-family: 'SourceSansPro';
 }
 
 a img {
@@ -17,6 +22,14 @@ a img {
 a {
   text-decoration: none;
   color: inherit;
+  /* wrap long text and urls */
+  white-space: pre; /* CSS 2.0 */
+  white-space: pre-wrap; /* CSS 2.1 */
+  white-space: pre-line; /* CSS 3.0 */
+  white-space: -pre-wrap; /* Opera 4-6 */
+  white-space: -o-pre-wrap; /* Opera 7 */
+  white-space: -moz-pre-wrap; /* Mozilla */
+  word-wrap: break-word; /* IE 5+ */
 }
 
 #header-page {
@@ -40,6 +53,7 @@ a {
   -o-transition: color .1s linear;
   -ms-transition: color .1s linear;
   transition: color .1s linear;
+  font-family: 'OpenSans';
 }
 
 #header-name a:hover,
@@ -69,20 +83,52 @@ article {
 h1 {
   font-size: 32px;
   color: #555;
+  /* wrap long text and urls */
+  white-space: pre; /* CSS 2.0 */
+  white-space: pre-wrap; /* CSS 2.1 */
+  white-space: pre-line; /* CSS 3.0 */
+  white-space: -pre-wrap; /* Opera 4-6 */
+  white-space: -o-pre-wrap; /* Opera 7 */
+  white-space: -moz-pre-wrap; /* Mozilla */
+  word-wrap: break-word; /* IE 5+ */
 }
 
 h1 {
   font-size: 26px;
   margin-top: 50px;
+  /* wrap long text and urls */
+  white-space: pre; /* CSS 2.0 */
+  white-space: pre-wrap; /* CSS 2.1 */
+  white-space: pre-line; /* CSS 3.0 */
+  white-space: -pre-wrap; /* Opera 4-6 */
+  white-space: -o-pre-wrap; /* Opera 7 */
+  white-space: -moz-pre-wrap; /* Mozilla */
+  word-wrap: break-word; /* IE 5+ */
 }
 
 h2 {
   font-size: 22px;
   margin-top: 50px;
+  /* wrap long text and urls */
+  white-space: pre; /* CSS 2.0 */
+  white-space: pre-wrap; /* CSS 2.1 */
+  white-space: pre-line; /* CSS 3.0 */
+  white-space: -pre-wrap; /* Opera 4-6 */
+  white-space: -o-pre-wrap; /* Opera 7 */
+  white-space: -moz-pre-wrap; /* Mozilla */
+  word-wrap: break-word; /* IE 5+ */
 }
 
 p {
   margin-top: 20px;
+  /* wrap long text and urls */
+  white-space: pre; /* CSS 2.0 */
+  white-space: pre-wrap; /* CSS 2.1 */
+  white-space: pre-line; /* CSS 3.0 */
+  white-space: -pre-wrap; /* Opera 4-6 */
+  white-space: -o-pre-wrap; /* Opera 7 */
+  white-space: -moz-pre-wrap; /* Mozilla */
+  word-wrap: break-word; /* IE 5+ */
 }
 
 time,
