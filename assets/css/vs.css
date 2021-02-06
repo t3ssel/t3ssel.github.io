@@ -43,6 +43,12 @@
 .highlight .kn { color: #c586c0 } /* Keywords */
 .highlight .ow { color: #c586c0 } /* Keywords */
 
+/* Javascript */
+.highlight .kd { color: #569cd6 } /* Keywords */
+.highlight .nx { color: #94d0f0 } /* Names: variables, etc */
+.highlight .na { color: #dcdcaa } /* Inline function names */
+.highlight .dl { color: #ce9178 } /* String delimiters */
+
 @media (prefers-color-scheme: dark) {
 
     .highlighter-rouge {

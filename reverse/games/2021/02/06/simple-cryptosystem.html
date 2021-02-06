@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>t3ssel - blog</title>
+  <link rel="stylesheet" type="text/css" href="/assets/css/default.css">
+  <link rel="stylesheet" type="text/css" href="/assets/css/vs.css">
+  <link rel="shortcut icon" type="image/x-icon" href="/assets/img/favicon.ico">
+</head>
+
+
+  <body>
+    <header id="header-page">
+  <div id="header-name"><a href="/">t3ssel</a></div>
+  <div id="header-menu"><a href="/about.html">who am i</a></div>
+</header>
+
+    <main>
+      <article>
+  <header class="article-header">
+    <h1 class="article-title">Reversing a simple cryptosystem</h1>
+  </header>
+  <time datetime="2021-02-06T17:18:21+01:00">Posted on
+    
+    Feb 6, 2021</time> - <span class="article-categories">reverse, games</span>
+  <div>
+    <p> From a technical standpoint, video games are really interesting. Not only they impose the players rules that virtually can’t be broken, but they also heavily rely on parsing, AI, networking, external execution units (scripts) and others interesting stuff. The biggest games are massive though. Yet, I managed to find a small French “amateur-ish” MMORPG that I thought would be quick to study. It was actually a quite interesting project.</p>
+
+<p>Online games are usually interesting to reverse for their network protocols. Digging around in Wireshark, I was unable to correlate in-game behaviours and network packets though. Sure there was some traffic. But there was no plaintext (that could be player messages or whatever) and repeating actions were never duplicate packets; suggesting encryption or at least modification of the original data.</p>
+
+<h1 id="discovery">Discovery</h1>
+
+<p> The game is divided in two binaries: the launcher in charge of updating the local files; and the game client. On startup, the launcher welcomes the player with a Message of the Day containing the number of online players: data only known by the game server. Having both the plaintext (shown by the launcher) and the ciphertext (seen on Wireshark) is a good starting point.</p>
+
+<p>IDA could find a bunch of stripped symbols (the binary is neither packed or obfuscated, phew) but it has also fingerprinted a Delphi standard library. A few breakpoints on symbols containing the string “read” highlighted one in particular: <code class="highlighter-rouge">Idtcpconnection::ReadFromStack</code>, part of the Delphi library.
+This method returns exactly the number of bytes of each packet seen on Wireshark.
+Another call to <code class="highlighter-rouge">TIdManagedBuffer::Memory(void)</code> fills <em>eax</em> with a pointer to the raw data .</p>
+
+<h1 id="decryption">Decryption</h1>
+
+<p> Using a watch rule on the pointer, I ended up in a method that was overwriting the buffer with the exact MOTD shown on the launcher. Here is the most important of it with my comments:</p>
+
+<div class="language-nasm highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">sub_4852E0</span> <span class="n">proc</span> <span class="n">near</span>         <span class="c">; sub_4852E0(key, packet)</span>
+
+<span class="c">; FASTCALL convention:</span>
+<span class="c">; - param_1 (eax)</span>
+<span class="c">; - param_2 (edx)</span>
+
+<span class="c">; [...]</span>
+<span class="k">mov</span>     <span class="n">eax</span><span class="p">,</span> <span class="err">[</span><span class="n">ebp</span><span class="o">+</span><span class="n">var_8</span><span class="err">]</span>     <span class="c">; var_8 contains the encrypted packet</span>
+<span class="k">mov</span>     <span class="n">al</span><span class="p">,</span> <span class="p">[eax]</span>            <span class="c">; al = packet[0]</span>
+<span class="k">xor</span>     <span class="n">al</span><span class="p">,</span> <span class="mi">21</span><span class="n">h</span>              <span class="c">; al = al ^ 0x21</span>
+<span class="k">mov</span>     <span class="n">esi</span><span class="p">,</span> <span class="n">eax</span>
+<span class="k">and</span>     <span class="n">esi</span><span class="p">,</span> <span class="mi">0</span><span class="n">FFh</span>
+<span class="k">mov</span>     <span class="n">ebx</span><span class="p">,</span> <span class="n">esi</span>             <span class="c">; ebx = esi &amp; 0xFF</span>
+<span class="c">; =&gt; ebx stores first index</span>
+
+<span class="k">mov</span>     <span class="n">eax</span><span class="p">,</span> <span class="err">[</span><span class="n">ebp</span><span class="o">+</span><span class="n">var_8</span><span class="err">]</span>     <span class="c">; var_8 contains the encrypted packet</span>
+<span class="k">call</span>    <span class="n">unknown_libname_82</span>   <span class="c">; unknown_libname_82(packet) - returns packet length</span>
+<span class="k">mov</span>     <span class="n">edx</span><span class="p">,</span> <span class="err">[</span><span class="n">ebp</span><span class="o">+</span><span class="n">var_8</span><span class="err">]</span>
+<span class="k">mov</span>     <span class="n">al</span><span class="p">,</span> <span class="err">[</span><span class="n">edx</span><span class="o">+</span><span class="n">eax</span><span class="o">-</span><span class="mi">1</span><span class="err">]</span>      <span class="c">; al = packet[packet.length() - 1]</span>
+<span class="k">xor</span>     <span class="n">al</span><span class="p">,</span> <span class="mi">42</span><span class="n">h</span>              <span class="c">; al = al ^ 0x42</span>
+<span class="k">and</span>     <span class="n">eax</span><span class="p">,</span> <span class="mi">0</span><span class="n">FFh</span>
+<span class="k">mov</span>     <span class="err">[</span><span class="n">ebp</span><span class="o">+</span><span class="n">var_10</span><span class="err">]</span><span class="p">,</span> <span class="n">eax</span>    <span class="c">; var_10 = eax &amp; 0xFF</span>
+<span class="c">; =&gt; var_10 stores second index</span>
+
+<span class="k">mov</span>     <span class="n">eax</span><span class="p">,</span> <span class="err">[</span><span class="n">ebp</span><span class="o">+</span><span class="n">var_8</span><span class="err">]</span>     <span class="c">; var_8 contains the encrypted packet</span>
+<span class="k">cmp</span>     <span class="n">byte</span> <span class="n">ptr</span> <span class="p">[eax],</span> <span class="mi">0</span><span class="n">FFh</span> <span class="c">; if packet[0] == 0xFF</span>
+<span class="k">setz</span>    <span class="err">[</span><span class="n">ebp</span><span class="o">+</span><span class="n">var_11</span><span class="err">]</span>         <span class="c">; then var_11 = 1 else var_11 = 0</span>
+<span class="k">mov</span>     <span class="n">eax</span><span class="p">,</span> <span class="err">[</span><span class="n">ebp</span><span class="o">+</span><span class="n">var_8</span><span class="err">]</span>     <span class="c">; var_8 contains the encrypted packet</span>
+<span class="k">call</span>    <span class="n">unknown_libname_82</span>   <span class="c">; unknown_libname_82(packet) - returns packet length</span>
+<span class="k">dec</span>     <span class="n">eax</span>                  <span class="c">; packet length - 1</span>
+<span class="k">sub</span>     <span class="n">eax</span><span class="p">,</span> <span class="mi">2</span>               <span class="c">; packet length - 2</span>
+<span class="k">jl</span>      <span class="n">short</span> <span class="n">loc_4853B7</span>     <span class="c">; jump after main loop if packet is empty</span>
+<span class="k">inc</span>     <span class="n">eax</span>
+<span class="k">mov</span>     <span class="err">[</span><span class="n">ebp</span><span class="o">+</span><span class="n">var_18</span><span class="err">]</span><span class="p">,</span> <span class="n">eax</span>
+<span class="k">mov</span>     <span class="n">edi</span><span class="p">,</span> <span class="mi">2</span>
+
+<span class="c">; this is the main loop</span>
+<span class="n">loc_48535D</span><span class="o">:</span>
+<span class="k">cmp</span>     <span class="err">[</span><span class="n">ebp</span><span class="o">+</span><span class="n">var_11</span><span class="err">]</span><span class="p">,</span> <span class="mi">0</span>      <span class="c">; if var_11 == 0</span>
+<span class="k">jz</span>      <span class="n">short</span> <span class="n">loc_485369</span>     <span class="c">; then jump to decryption process</span>
+<span class="k">mov</span>     <span class="err">[</span><span class="n">ebp</span><span class="o">+</span><span class="n">var_11</span><span class="err">]</span><span class="p">,</span> <span class="mi">0</span>      <span class="c">; otherwise set var_11 to 0</span>
+<span class="k">jmp</span>     <span class="n">short</span> <span class="n">loc_485394</span>     <span class="c">; and jump just after the decryption process</span>
+
+<span class="n">loc_485369</span><span class="o">:</span>
+<span class="k">mov</span>     <span class="n">eax</span><span class="p">,</span> <span class="err">[</span><span class="n">ebp</span><span class="o">+</span><span class="n">var_8</span><span class="err">]</span>     <span class="c">; var_8 contains the encrypted packet</span>
+<span class="k">cmp</span>     <span class="n">byte</span> <span class="n">ptr</span> <span class="err">[</span><span class="n">eax</span><span class="o">+</span><span class="n">edi</span><span class="o">-</span><span class="mi">1</span><span class="err">]</span><span class="p">,</span> <span class="mi">0</span><span class="n">FFh</span> <span class="c">; if packet[edi - 1] == 0xFF</span>
+<span class="k">setz</span>    <span class="err">[</span><span class="n">ebp</span><span class="o">+</span><span class="n">var_11</span><span class="err">]</span>         <span class="c">; then var_11 = 1 else var_11 = 0</span>
+<span class="k">lea</span>     <span class="n">eax</span><span class="p">,</span> <span class="err">[</span><span class="n">ebp</span><span class="o">+</span><span class="n">var_8</span><span class="err">]</span>
+<span class="k">call</span>    <span class="n">j_unknown_libname_83_0</span> <span class="c">; somekind of a string conversion function, probably used to escape weird characters, let's ignore it</span>
+
+<span class="c">; the decryption process happens here</span>
+<span class="k">mov</span>     <span class="n">edx</span><span class="p">,</span> <span class="err">[</span><span class="n">ebp</span><span class="o">+</span><span class="n">var_8</span><span class="err">]</span>     <span class="c">; var_8 contains the encrypted packet</span>
+<span class="k">mov</span>     <span class="n">dl</span><span class="p">,</span> <span class="err">[</span><span class="n">edx</span><span class="o">+</span><span class="n">edi</span><span class="o">-</span><span class="mi">1</span><span class="err">]</span>      <span class="c">; dl = packet[edi -1]</span>
+<span class="k">mov</span>     <span class="n">ecx</span><span class="p">,</span> <span class="err">[</span><span class="n">ebp</span><span class="o">+</span><span class="n">var_4</span><span class="err">]</span>     <span class="c">; var_4 contains the decryption key</span>
+<span class="k">xor</span>     <span class="n">dl</span><span class="p">,</span> <span class="err">[</span><span class="n">ecx</span><span class="o">+</span><span class="n">esi</span><span class="o">+</span><span class="mi">360</span><span class="n">h</span><span class="err">]</span>   <span class="c">; dl = dl ^ key[esi] (static decryption key)</span>
+<span class="k">xor</span>     <span class="n">dl</span><span class="p">,</span> <span class="n">bl</span>               <span class="c">; dl = dl ^ bl (first index)</span>
+<span class="k">mov</span>     <span class="err">[</span><span class="n">eax</span><span class="o">+</span><span class="n">edi</span><span class="o">-</span><span class="mi">1</span><span class="err">]</span><span class="p">,</span> <span class="n">dl</span>      <span class="c">; packet[edi - 1] = dl</span>
+
+<span class="n">loc_485394</span><span class="o">:</span>
+<span class="k">add</span>     <span class="n">esi</span><span class="p">,</span> <span class="err">[</span><span class="n">ebp</span><span class="o">+</span><span class="n">var_10</span><span class="err">]</span>    <span class="c">; esi += var_10 (second index)</span>
+<span class="k">sub</span>     <span class="n">ebx</span><span class="p">,</span> <span class="err">[</span><span class="n">ebp</span><span class="o">+</span><span class="n">var_10</span><span class="err">]</span>    <span class="c">; ebx -= var_10 (second index)</span>
+<span class="k">add</span>     <span class="n">ebx</span><span class="p">,</span> <span class="mi">3</span>               <span class="c">; ebx += 3 (first index)</span>
+<span class="k">cmp</span>     <span class="n">esi</span><span class="p">,</span> <span class="mi">100</span><span class="n">h</span>            <span class="c">; if esi &gt;= 0x100</span>
+<span class="k">jl</span>      <span class="n">short</span> <span class="n">loc_4853AA</span>
+<span class="k">mov</span>     <span class="n">esi</span><span class="p">,</span> <span class="mi">1</span>               <span class="c">; then ebx = 1</span>
+
+<span class="n">loc_4853AA</span><span class="o">:</span>
+<span class="k">cmp</span>     <span class="n">ebx</span><span class="p">,</span> <span class="mi">1</span>               <span class="c">; if ebx &lt; 1</span>
+<span class="k">jge</span>     <span class="n">short</span> <span class="n">loc_4853B1</span>
+<span class="k">mov</span>     <span class="n">ebx</span><span class="p">,</span> <span class="n">esi</span>             <span class="c">; then ebx = esi</span>
+
+<span class="n">loc_4853B1</span><span class="o">:</span>
+<span class="k">inc</span>     <span class="n">edi</span>                  <span class="c">; edi++</span>
+<span class="k">dec</span>     <span class="err">[</span><span class="n">ebp</span><span class="o">+</span><span class="n">var_18</span><span class="err">]</span>         <span class="c">; var_18-- ; if var_18 != 0</span>
+<span class="k">jnz</span>     <span class="n">short</span> <span class="n">loc_48535D</span>     <span class="c">; then jump back beginning of loop</span>
+
+<span class="c">; [...]</span>
+</code></pre></div></div>
+
+<p>The decryption method can be broken down in two distinct operations:</p>
+<ul>
+  <li>a xor between the packet byte and the key byte at position <em>esi</em>
+</li>
+  <li>a xor with the value of <em>ebx</em>
+</li>
+</ul>
+
+<p>Both <em>esi</em> and <em>ebx</em> are calculated from the first packet byte xor-ed to a static value of 0x21. A <em>step</em> is calculated from the last packet byte xor-ed to a static value of 0x42. The latter is added to <em>esi</em> and substracted to <em>ebx</em> for each loop cycle, making the decryption key to “slide” along the packet bytes.</p>
+
+<p>It can be noted that each packet ends by <code class="highlighter-rouge">[0xFF,0xFF]</code> so a packet of size 2 is considered empty.</p>
+
+<h1 id="encryption">Encryption</h1>
+
+<p> At first I thought it would be easier to “deduce” the encryption method from the decryption assembly. It ain’t no fun though and I wanted to know how the two indexes were generated. So instead, by backtracing the decryption function, I went back to the caller and found a symbol overwriting the string “version:6”. It looks like this:</p>
+
+<div class="language-nasm highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">sub_485034</span> <span class="n">proc</span> <span class="n">near</span>         <span class="c">; sub_485034(key, "version:6")</span>
+
+<span class="c">; FASTCALL convention:</span>
+<span class="c">; - param_1 (eax)</span>
+<span class="c">; - param_2 (edx)</span>
+
+<span class="c">; [...]</span>
+<span class="k">mov</span>     <span class="n">eax</span><span class="p">,</span> <span class="mi">0</span><span class="n">FCh</span>
+<span class="k">call</span>    <span class="n">unknown_libname_47</span>   <span class="c">; unknown_libname_47(0xFC) - returns first index</span>
+<span class="k">mov</span>     <span class="n">ebx</span><span class="p">,</span> <span class="n">eax</span>
+<span class="k">inc</span>     <span class="n">ebx</span>                  <span class="c">; (first index)++</span>
+<span class="k">mov</span>     <span class="n">esi</span><span class="p">,</span> <span class="n">ebx</span>
+<span class="k">mov</span>     <span class="n">eax</span><span class="p">,</span> <span class="mi">14</span><span class="n">h</span>
+<span class="k">call</span>    <span class="n">unknown_libname_47</span>   <span class="c">; unknown_libname_47(0x14) - returns second index</span>
+<span class="k">mov</span>     <span class="err">[</span><span class="n">ebp</span><span class="o">+</span><span class="n">var_C</span><span class="err">]</span><span class="p">,</span> <span class="n">eax</span>
+<span class="k">mov</span>     <span class="n">edi</span><span class="p">,</span> <span class="n">ebx</span>
+<span class="k">xor</span>     <span class="n">edi</span><span class="p">,</span> <span class="mi">21</span><span class="n">h</span>             <span class="c">; edi = (first index) ^ 0x21</span>
+<span class="k">lea</span>     <span class="n">eax</span><span class="p">,</span> <span class="err">[</span><span class="n">ebp</span><span class="o">+</span><span class="n">var_18</span><span class="err">]</span>
+<span class="k">mov</span>     <span class="n">edx</span><span class="p">,</span> <span class="n">edi</span>
+<span class="k">call</span>    <span class="n">unknown_libname_77</span>   <span class="c">; unknown_libname_77(edi) - returns a string containing first index</span>
+<span class="k">push</span>    <span class="err">[</span><span class="n">ebp</span><span class="o">+</span><span class="n">var_18</span><span class="err">]</span>
+<span class="k">push</span>    <span class="err">[</span><span class="n">ebp</span><span class="o">+</span><span class="n">var_8</span><span class="err">]</span>
+<span class="k">lea</span>     <span class="n">eax</span><span class="p">,</span> <span class="err">[</span><span class="n">ebp</span><span class="o">+</span><span class="n">var_1C</span><span class="err">]</span>
+<span class="k">mov</span>     <span class="n">dl</span><span class="p">,</span> <span class="n">byte</span> <span class="n">ptr</span> <span class="err">[</span><span class="n">ebp</span><span class="o">+</span><span class="n">var_C</span><span class="err">]</span>
+<span class="k">xor</span>     <span class="n">dl</span><span class="p">,</span> <span class="mi">42</span><span class="n">h</span>              <span class="c">; dl = (second index) ^ 0x42</span>
+<span class="k">call</span>    <span class="n">unknown_libname_77</span>   <span class="c">; unknown_libname_77(edx) - returns a string containing second index</span>
+<span class="k">push</span>    <span class="err">[</span><span class="n">ebp</span><span class="o">+</span><span class="n">var_1C</span><span class="err">]</span>
+<span class="k">lea</span>     <span class="n">eax</span><span class="p">,</span> <span class="err">[</span><span class="n">ebp</span><span class="o">+</span><span class="n">var_8</span><span class="err">]</span>
+<span class="k">mov</span>     <span class="n">edx</span><span class="p">,</span> <span class="mi">3</span>
+<span class="k">call</span>    <span class="err">@</span><span class="n">System</span><span class="err">@@</span><span class="n">LStrCatN</span><span class="err">$</span><span class="n">qqrv</span> <span class="c">; strcat() - returns (first index) + "version:6" + (second index)</span>
+<span class="k">cmp</span>     <span class="n">edi</span><span class="p">,</span> <span class="mi">0</span><span class="n">FFh</span>
+<span class="k">setz</span>    <span class="err">[</span><span class="n">ebp</span><span class="o">+</span><span class="n">var_D</span><span class="err">]</span>
+<span class="k">mov</span>     <span class="n">eax</span><span class="p">,</span> <span class="err">[</span><span class="n">ebp</span><span class="o">+</span><span class="n">var_8</span><span class="err">]</span>     <span class="c">; var_8 = strcat string result</span>
+<span class="k">call</span>    <span class="n">unknown_libname_82</span>   <span class="c">; strlen(var_8) - returns 11</span>
+<span class="k">dec</span>     <span class="n">eax</span>
+<span class="k">sub</span>     <span class="n">eax</span><span class="p">,</span> <span class="mi">2</span>               <span class="c">; if length &lt; 2</span>
+<span class="k">jl</span>      <span class="n">short</span> <span class="n">loc_48512A</span>     <span class="c">; then jump after loop</span>
+<span class="k">inc</span>     <span class="n">eax</span>
+<span class="k">mov</span>     <span class="err">[</span><span class="n">ebp</span><span class="o">+</span><span class="n">var_14</span><span class="err">]</span><span class="p">,</span> <span class="n">eax</span>
+<span class="k">mov</span>     <span class="n">edi</span><span class="p">,</span> <span class="mi">2</span>
+
+<span class="c">; this is the main loop</span>
+<span class="n">loc_4850D4</span><span class="o">:</span>
+<span class="k">cmp</span>     <span class="err">[</span><span class="n">ebp</span><span class="o">+</span><span class="n">var_D</span><span class="err">]</span><span class="p">,</span> <span class="mi">0</span>       <span class="c">; if var_D != 0</span>
+<span class="k">jnz</span>     <span class="n">short</span> <span class="n">loc_4850FB</span>     <span class="c">; then jump after decryption process</span>
+<span class="k">lea</span>     <span class="n">eax</span><span class="p">,</span> <span class="err">[</span><span class="n">ebp</span><span class="o">+</span><span class="n">var_8</span><span class="err">]</span>     <span class="c">; var_8 = string to encrypt</span>
+<span class="k">call</span>    <span class="n">j_unknown_libname_83_0</span> <span class="c">; ignored by me</span>
+<span class="k">mov</span>     <span class="n">edx</span><span class="p">,</span> <span class="err">[</span><span class="n">ebp</span><span class="o">+</span><span class="n">var_8</span><span class="err">]</span>
+<span class="k">mov</span>     <span class="n">dl</span><span class="p">,</span> <span class="err">[</span><span class="n">edx</span><span class="o">+</span><span class="n">edi</span><span class="o">-</span><span class="mi">1</span><span class="err">]</span>      <span class="c">; dl = string[edi - 1]</span>
+<span class="k">mov</span>     <span class="n">ecx</span><span class="p">,</span> <span class="err">[</span><span class="n">ebp</span><span class="o">+</span><span class="n">var_4</span><span class="err">]</span>
+<span class="k">xor</span>     <span class="n">dl</span><span class="p">,</span> <span class="err">[</span><span class="n">ecx</span><span class="o">+</span><span class="n">ebx</span><span class="o">+</span><span class="mi">360</span><span class="n">h</span><span class="err">]</span>   <span class="c">; dl = dl ^ key[ebx]</span>
+<span class="k">mov</span>     <span class="n">ecx</span><span class="p">,</span> <span class="n">esi</span>             <span class="c">; cl = (esi &amp; 0xFF)</span>
+<span class="k">xor</span>     <span class="n">dl</span><span class="p">,</span> <span class="n">cl</span>               <span class="c">; dl = dl ^ cl</span>
+<span class="k">mov</span>     <span class="err">[</span><span class="n">eax</span><span class="o">+</span><span class="n">edi</span><span class="o">-</span><span class="mi">1</span><span class="err">]</span><span class="p">,</span> <span class="n">dl</span>      <span class="c">; string[edi - 1] = dl</span>
+
+<span class="n">loc_4850FB</span><span class="o">:</span>
+<span class="k">mov</span>     <span class="n">eax</span><span class="p">,</span> <span class="err">[</span><span class="n">ebp</span><span class="o">+</span><span class="n">var_8</span><span class="err">]</span>     <span class="c">; eax = string</span>
+<span class="k">cmp</span>     <span class="n">byte</span> <span class="n">ptr</span> <span class="err">[</span><span class="n">eax</span><span class="o">+</span><span class="n">edi</span><span class="o">-</span><span class="mi">1</span><span class="err">]</span><span class="p">,</span> <span class="mi">0</span><span class="n">FFh</span> <span class="c">; if var_8[edi - 1] == 0xFF</span>
+<span class="k">setz</span>    <span class="err">[</span><span class="n">ebp</span><span class="o">+</span><span class="n">var_D</span><span class="err">]</span>          <span class="c">; then var_D = 1 else var_D = 0</span>
+<span class="k">add</span>     <span class="n">ebx</span><span class="p">,</span> <span class="err">[</span><span class="n">ebp</span><span class="o">+</span><span class="n">var_C</span><span class="err">]</span>     <span class="c">; ebx += var_C</span>
+<span class="k">sub</span>     <span class="n">esi</span><span class="p">,</span> <span class="err">[</span><span class="n">ebp</span><span class="o">+</span><span class="n">var_C</span><span class="err">]</span>     <span class="c">; esi -= var_C</span>
+<span class="k">add</span>     <span class="n">esi</span><span class="p">,</span> <span class="mi">3</span>               <span class="c">; esi += 3</span>
+<span class="k">cmp</span>     <span class="n">ebx</span><span class="p">,</span> <span class="mi">100</span><span class="n">h</span>            <span class="c">; if ebx &gt;= 256</span>
+<span class="k">jl</span>      <span class="n">short</span> <span class="n">loc_48511D</span>
+<span class="k">mov</span>     <span class="n">ebx</span><span class="p">,</span> <span class="mi">1</span>               <span class="c">; then ebx = 1</span>
+
+<span class="n">loc_48511D</span><span class="o">:</span>
+<span class="k">cmp</span>     <span class="n">esi</span><span class="p">,</span> <span class="mi">1</span>               <span class="c">; if esi &lt; 1</span>
+<span class="k">jge</span>     <span class="n">short</span> <span class="n">loc_485124</span>
+<span class="k">mov</span>     <span class="n">esi</span><span class="p">,</span> <span class="n">ebx</span>             <span class="c">; then esi = ebx</span>
+
+<span class="n">loc_485124</span><span class="o">:</span>
+<span class="k">inc</span>     <span class="n">edi</span>                  <span class="c">; edi++</span>
+<span class="k">dec</span>     <span class="err">[</span><span class="n">ebp</span><span class="o">+</span><span class="n">var_14</span><span class="err">]</span>         <span class="c">; var_14-- ; if var_14 != 0</span>
+<span class="k">jnz</span>     <span class="n">short</span> <span class="n">loc_4850D4</span>     <span class="c">; then jump back beginning of loop</span>
+
+<span class="c">; [...]</span>
+</code></pre></div></div>
+
+<p>No mystery here, encryption is pretty similar to decryption in the other way around. The two indexes used as a <em>step</em> are calculated by <code class="highlighter-rouge">unknown_libname_47</code> which looks like this:</p>
+
+<div class="language-nasm highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">unknown_libname_47</span> <span class="n">proc</span> <span class="n">near</span> <span class="c">; unknown_libname_47(value)</span>
+
+<span class="c">; FASTCALL convention:</span>
+<span class="c">; - param_1 (eax)</span>
+
+<span class="k">push</span>    <span class="n">ebx</span>
+<span class="k">xor</span>     <span class="n">ebx</span><span class="p">,</span> <span class="n">ebx</span>            <span class="c">; ebx = 0</span>
+<span class="k">imul</span>    <span class="n">edx</span><span class="p">,</span> <span class="n">ds</span><span class="o">:</span><span class="n">dword_489008</span><span class="p">[ebx],</span> <span class="mi">8088405</span><span class="n">h</span> <span class="c">; edx = dword_489008[0] * 0x8088405</span>
+<span class="k">inc</span>     <span class="n">edx</span>                 <span class="c">; edx++</span>
+<span class="k">mov</span>     <span class="n">ds</span><span class="o">:</span><span class="n">dword_489008</span><span class="p">[ebx],</span> <span class="n">edx</span> <span class="c">; dword_489008[0] = edx</span>
+<span class="k">mul</span>     <span class="n">edx</span>                 <span class="c">; edx = edx * value</span>
+<span class="k">mov</span>     <span class="n">eax</span><span class="p">,</span> <span class="n">edx</span>            <span class="c">; returns edx</span>
+<span class="k">pop</span>     <span class="n">ebx</span>
+<span class="k">retn</span>
+</code></pre></div></div>
+
+<p>Interesting one. Each call to <code class="highlighter-rouge">unknown_libname_47</code> is a multiplication of a value stored at <em>dword_489008</em> and the constant <em>0x8088405</em>. The result is then increased by one and stored back to <em>dword_489008</em>. This is probably done because the initial value of <em>dword_489008</em> is zero and the multiplication would be zero every single time otherwise.
+Indexes are the multiplication of <em>dword_489008</em> and the first argument value. That means index calculations are deterministic and rely only on <code class="highlighter-rouge">unknown_libname_47</code>’s last calls.</p>
+
+<h1 id="extracting-the-key">Extracting the key</h1>
+
+<p> Using a debugger is a pretty straightforward way to export the symmetric-key. A breakpoint on the right function (encryption or decryption) and a copy/paste of the buffer at <em>eax</em> is enough. I found it boring and wanted to “automate” the process with Frida. A simple script for a simple problem:</p>
+
+<div class="language-javascript highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">var</span> <span class="nx">decryptor</span> <span class="o">=</span> <span class="nx">resolveAddress</span><span class="p">(</span><span class="dl">"</span><span class="s2">0x4852E0</span><span class="dl">"</span><span class="p">);</span>
+<span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="dl">"</span><span class="s2">Intercepting function at address </span><span class="dl">"</span> <span class="o">+</span> <span class="nx">decryptor</span><span class="p">);</span>
+
+<span class="nx">Interceptor</span><span class="p">.</span><span class="nx">attach</span><span class="p">(</span><span class="nx">decryptor</span><span class="p">,</span> <span class="p">{</span>
+    <span class="na">onEnter</span><span class="p">:</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">args</span><span class="p">)</span> <span class="p">{</span>
+        <span class="kd">var</span> <span class="nx">offset</span> <span class="o">=</span> <span class="nx">ptr</span><span class="p">(</span><span class="dl">"</span><span class="s2">0x360</span><span class="dl">"</span><span class="p">);</span>
+        <span class="kd">var</span> <span class="nx">arg</span> <span class="o">=</span> <span class="nx">ptr</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">context</span><span class="p">[</span><span class="dl">"</span><span class="s2">eax</span><span class="dl">"</span><span class="p">]).</span><span class="nx">add</span><span class="p">(</span><span class="nx">offset</span><span class="p">);</span>
+
+        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">hexdump</span><span class="p">(</span><span class="nx">arg</span><span class="p">,</span> <span class="p">{</span> <span class="na">offset</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="na">length</span><span class="p">:</span> <span class="mi">256</span><span class="p">,</span> <span class="na">header</span><span class="p">:</span> <span class="kc">true</span><span class="p">,</span> <span class="na">ansi</span><span class="p">:</span> <span class="kc">true</span><span class="p">}));</span>
+    <span class="p">},</span>
+<span class="p">});</span>
+</code></pre></div></div>
+<p>(Full script available <a href="https://github.com/t3ssel/002-simple-cryptosystem/blob/main/extract_key.py" target="_blank" rel="noopener noreferrer">here</a>).</p>
+
+<p>Note: FASTCALL prevents me from using <code class="highlighter-rouge">args</code> directly. I believe Frida works with stdcall by default and the calling convention cannot be changed from the JS API.</p>
+
+<h1 id="in-the-end">In the end</h1>
+
+<p> For the encryption and decryption functions, it would have probably been easier to use emulators like <a href="https://github.com/unicorn-engine/unicorn" target="_blank" rel="noopener noreferrer">Unicorn</a> or <a href="https://github.com/cea-sec/miasm" target="_blank" rel="noopener noreferrer">miasm</a>. I took the time to understand how the functions were implemented and decided to <a href="https://github.com/t3ssel/002-simple-cryptosystem/blob/main/src/crypto.py" target="_blank" rel="noopener noreferrer">reimplement them in Python</a>. First because of course it was a lot of fun. But I also think it will help me to have a standalone code I can manipulate. From this, I can start analysing the network protocol writing a MITM tool, or even try to replace a game server or game client. Next step: understanding the network protocol.</p>
+
+  </div>
+</article>
+
+    </main>
+    <footer id="footer-page">
+      <p>All work and opinions are solely my own and do not express the views or opinions of my employer.</p>
+    </footer>
+  </body>
+</html> 
